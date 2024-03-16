@@ -70,7 +70,9 @@ func (u *uploader) compressBuffer(b []byte) (*bytes.Buffer, error) {
 }
 
 func (u *uploader) setHeaders(b *Batch, r *http.Request) {
-	r.Header.Add(sourceNameHeader, b.config.sourceName)
+	if b.config.sourceName != "" {
+		r.Header.Add(sourceNameHeader, b.config.sourceName)
+	}
 	r.Header.Add(sourceHostHeader, b.config.sourceHost)
 	r.Header.Add(sourceCategoryHeader, b.config.sourceCategory)
 	r.Header.Add(compressionHeader, compressionType)
