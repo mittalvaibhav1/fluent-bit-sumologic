@@ -55,7 +55,7 @@ func (u *uploader) createBuffer(b *Batch) (*bytes.Buffer, error) {
 }
 
 func (u *uploader) compressBuffer(b []byte) (*bytes.Buffer, error) {
-	var buffer *bytes.Buffer
+	buffer := new(bytes.Buffer)
 	c, err := gzip.NewWriterLevel(
 		buffer,
 		gzip.BestCompression,
