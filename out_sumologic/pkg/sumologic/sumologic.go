@@ -78,18 +78,38 @@ func (s *SumoLogic) SendBatch(batch *Batch) error {
 }
 
 func (s *SumoLogic) Start() {
-	defer func() {
-		s.uploader.wg.Done()
-	}()
+	defer s.uploader.wg.Done()
 	for batch := range s.uploader.batches {
 		// upload batch to sumologic
 		s.logger.Debugf("attempting upload to sumologic with config: %v", batch.config)
-		err := s.uploader.upload(batch)
-		if err != nil {
-			s.logger.Errorf("failed to upload batch to sumologic %v", err)
-		} else {
-			s.logger.Debug("successfully uploaded batch to sumologic")
-		}
+		s.uploader.wg.Add(1)
+		go s.retryAndUpload(batch)
+	}
+}
+
+func (s *SumoLogic) retryAndUpload(batch *Batch) {
+	defer s.uploader.wg.Done()
+	err := s.retryer(
+		batch.config.maxRetries,
+		func() error {
+			return s.uploader.upload(batch)
+		},
+	)
+	if err != nil {
+		s.logger.Errorf("failed to upload batch to sumologic %v, retries exhausted!", err)
+	} else {
+		s.logger.Debug("successfully uploaded batch to sumologic")
+	}
+}
+
+func (s *SumoLogic) retryer(attempts uint64, f func() error) error {
+	err := f()
+	if err != nil && attempts > 0 {
+		s.logger.Debugf("failed with err: %v, %d retries left", err, attempts)
+		time.Sleep(30 * time.Second)
+		return s.retryer(attempts-1, f)
+	} else {
+		return err
 	}
 }
 
@@ -118,7 +138,7 @@ func Initalize(plugin unsafe.Pointer, id int) (*SumoLogic, error) {
 	s.logger.Debug(s.config)
 
 	s.uploader = &uploader{
-		batches: make(chan *Batch),
+		batches: make(chan *Batch, 1000),
 	}
 	s.uploader.wg.Add(1)
 	go s.Start()
