@@ -13,12 +13,12 @@ import (
 )
 
 const (
-	DEFAULT_SOURCE_CATEGORY = "sumologic_default"
-	DEFAULT_TAG_DELIMITER   = "."
-	DEFAULT_LOG_LEVEL       = "info"
-	DEFAULT_MAX_RETRIES     = "10"
-	DEFAULT_LOG_KEY         = "log"
-	TAG_REGEX               = `\$TAG\[(\d+)\]`
+	defaultSourceCategory string = "sumologic_default"
+	defaultTagDelimiter   string = "."
+	defaultLogLevel       string = "info"
+	defaultMaxRetries     string = "10"
+	defaultLogKey         string = "log"
+	tagRegex              string = `\$TAG\[(\d+)\]`
 )
 
 type sumoLogicConfig struct {
@@ -57,16 +57,16 @@ func loadConfig(plugin unsafe.Pointer) (*sumoLogicConfig, error) {
 	config.sourceHost = c.GetOrDefault("Source_Host", sourceHost)
 
 	config.sourceName = c.Get("Source_Name")
-	config.sourceCategory = c.GetOrDefault("Source_Category", DEFAULT_SOURCE_CATEGORY)
-	config.tagDelimiter = c.GetOrDefault("Tag_Delimiter", DEFAULT_TAG_DELIMITER)
-	config.logKey = c.GetOrDefault("Log_Key", DEFAULT_LOG_KEY)
+	config.sourceCategory = c.GetOrDefault("Source_Category", defaultSourceCategory)
+	config.tagDelimiter = c.GetOrDefault("Tag_Delimiter", defaultTagDelimiter)
+	config.logKey = c.GetOrDefault("Log_Key", defaultLogKey)
 
-	config.level, err = logrus.ParseLevel(c.GetOrDefault("Level", DEFAULT_LOG_LEVEL))
+	config.level, err = logrus.ParseLevel(c.GetOrDefault("Level", defaultLogLevel))
 	if err != nil {
 		return nil, fmt.Errorf("invalid value for Level, %w", err)
 	}
 
-	config.maxRetries, err = strconv.ParseUint(c.GetOrDefault("Max_Retries", DEFAULT_MAX_RETRIES), 10, 64)
+	config.maxRetries, err = strconv.ParseUint(c.GetOrDefault("Max_Retries", defaultMaxRetries), 10, 64)
 	if err != nil {
 		return nil, fmt.Errorf("invalid value for Retry_Limit, %w", err)
 	}
@@ -75,7 +75,7 @@ func loadConfig(plugin unsafe.Pointer) (*sumoLogicConfig, error) {
 }
 
 func replaceWithTag(value string, tagSlice []string) (string, error) {
-	regex := regexp.MustCompile(TAG_REGEX)
+	regex := regexp.MustCompile(tagRegex)
 	length := len(tagSlice)
 	matches := regex.FindAllString(value, length)
 
