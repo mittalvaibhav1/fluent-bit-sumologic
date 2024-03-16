@@ -16,4 +16,4 @@ apply:
 
 run: build load apply
 
-rund: build delete load apply
+drun: build delete load apply
