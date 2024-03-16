@@ -2,6 +2,7 @@ package sumologic
 
 import (
 	"bytes"
+	"compress/gzip"
 	"fmt"
 	"net/http"
 	"sync"
@@ -11,6 +12,8 @@ const (
 	sourceNameHeader     = "X-Sumo-Name"
 	sourceHostHeader     = "X-Sumo-Host"
 	sourceCategoryHeader = "X-Sumo-Category"
+	compressionHeader    = "Content-Encoding"
+	compressionType      = "gzip"
 )
 
 type uploader struct {
@@ -19,7 +22,10 @@ type uploader struct {
 }
 
 func (u *uploader) upload(b *Batch) error {
-	body := u.createBuffer(b)
+	body, err := u.createBuffer(b)
+	if err != nil {
+		return err
+	}
 	request, err := http.NewRequest(
 		http.MethodPost,
 		b.config.collectorURL,
@@ -39,18 +45,33 @@ func (u *uploader) upload(b *Batch) error {
 	return nil
 }
 
-func (u *uploader) createBuffer(b *Batch) *bytes.Reader {
+func (u *uploader) createBuffer(b *Batch) (*bytes.Buffer, error) {
 	var buffer []byte
 	for _, e := range b.entries {
 		buffer = append(buffer, e.record...)
 		buffer = append(buffer, "\n"...)
 	}
-	reader := bytes.NewReader(buffer)
-	return reader
+	return u.compressBuffer(buffer)
+}
+
+func (u *uploader) compressBuffer(b []byte) (*bytes.Buffer, error) {
+	var buffer *bytes.Buffer
+	c, err := gzip.NewWriterLevel(
+		buffer,
+		gzip.BestCompression,
+	)
+	c.Write(b)
+	c.Close()
+	if err != nil {
+		return nil, fmt.Errorf("failed to compress the data, %w", err)
+
+	}
+	return buffer, nil
 }
 
 func (u *uploader) setHeaders(b *Batch, r *http.Request) {
 	r.Header.Add(sourceNameHeader, b.config.sourceName)
 	r.Header.Add(sourceHostHeader, b.config.sourceHost)
 	r.Header.Add(sourceCategoryHeader, b.config.sourceCategory)
+	r.Header.Add(compressionHeader, compressionType)
 }
