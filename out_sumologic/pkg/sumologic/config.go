@@ -17,6 +17,7 @@ const (
 	DEFAULT_TAG_DELIMITER   = "."
 	DEFAULT_LOG_LEVEL       = "info"
 	DEFAULT_MAX_RETRIES     = "10"
+	DEFAULT_LOG_KEY         = "log"
 	TAG_REGEX               = `\$TAG\[(\d+)\]`
 )
 
@@ -27,12 +28,13 @@ type sumoLogicConfig struct {
 	sourceCategory string
 	tagDelimiter   string
 	level          logrus.Level
+	logKey         string
 	maxRetries     uint64
 }
 
 func (c *sumoLogicConfig) String() string {
-	return fmt.Sprintf("Collector_Url=%s, Source_Name=%s, Source_Host=%s, Source_Category=%s, Tag_Delimiter=%s, Level=%s, Max_Retries=%d",
-		c.collectorURL, c.sourceName, c.sourceHost, c.sourceCategory, c.tagDelimiter, c.level.String(), c.maxRetries)
+	return fmt.Sprintf("Collector_Url=%s, Source_Name=%s, Source_Host=%s, Source_Category=%s, Tag_Delimiter=%s, Level=%s, Log_Key=%s, Max_Retries=%d",
+		c.collectorURL, c.sourceName, c.sourceHost, c.sourceCategory, c.tagDelimiter, c.level.String(), c.logKey, c.maxRetries)
 }
 
 func loadConfig(plugin unsafe.Pointer) (*sumoLogicConfig, error) {
@@ -57,6 +59,7 @@ func loadConfig(plugin unsafe.Pointer) (*sumoLogicConfig, error) {
 	config.sourceName = c.Get("Source_Name")
 	config.sourceCategory = c.GetOrDefault("Source_Category", DEFAULT_SOURCE_CATEGORY)
 	config.tagDelimiter = c.GetOrDefault("Tag_Delimiter", DEFAULT_TAG_DELIMITER)
+	config.logKey = c.GetOrDefault("Log_Key", DEFAULT_LOG_KEY)
 
 	config.level, err = logrus.ParseLevel(c.GetOrDefault("Level", DEFAULT_LOG_LEVEL))
 	if err != nil {

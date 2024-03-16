@@ -1,6 +1,9 @@
 package fluentbit
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"strconv"
+)
 
 func encodeJSON(record map[interface{}]interface{}) map[string]interface{} {
 	m := make(map[string]interface{})
@@ -36,11 +39,20 @@ func flatten(m map[string]interface{}) map[string]interface{} {
 	return o
 }
 
-func CreateJSON(record map[interface{}]interface{}) (string, error) {
+func CreateJSON(record map[interface{}]interface{}, logKey string) (string, error) {
+	var res []byte
+	var err error
+
 	m := flatten(encodeJSON(record))
-	json, err := json.Marshal(m)
+	log, ok := m[logKey]
+
+	if ok {
+		res, err = json.Marshal(log)
+	} else {
+		res, err = json.Marshal(m)
+	}
 	if err != nil {
 		return string("{}"), err
 	}
-	return string(json), nil
+	return strconv.Unquote(string(res))
 }

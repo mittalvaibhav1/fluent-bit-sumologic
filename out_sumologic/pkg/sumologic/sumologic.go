@@ -45,7 +45,7 @@ func (s *SumoLogic) CreateBatch(data unsafe.Pointer, length int, tag string) (*B
 		// Parse timestamp
 		timestamp := fluentbit.GetTimeStamp(ts)
 		// Convert record to JSON
-		jsonRecord, err := fluentbit.CreateJSON(record)
+		jsonRecord, err := fluentbit.CreateJSON(record, s.config.logKey)
 		if err != nil {
 			s.logger.Warnf("failed to parse the record %v", err)
 			return nil, err
