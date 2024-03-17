@@ -106,7 +106,7 @@ func (s *SumoLogic) retryer(attempts uint64, f func() error) error {
 	err := f()
 	if err != nil && attempts > 0 {
 		s.logger.Debugf("failed with err: %v, %d retries left", err, attempts)
-		time.Sleep(30 * time.Second)
+		time.Sleep(5 * time.Second)
 		return s.retryer(attempts-1, f)
 	} else {
 		return err
