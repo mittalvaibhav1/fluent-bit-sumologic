@@ -7,9 +7,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type fluentBitLogFormat struct{}
+type FLBLogFormat struct{}
 
-func (f *fluentBitLogFormat) Format(entry *logrus.Entry) ([]byte, error) {
+func (f *FLBLogFormat) Format(entry *logrus.Entry) ([]byte, error) {
 	var b *bytes.Buffer
 	if entry.Buffer != nil {
 		b = entry.Buffer
@@ -38,6 +38,6 @@ func (f *fluentBitLogFormat) Format(entry *logrus.Entry) ([]byte, error) {
 func New(name string, level logrus.Level) *logrus.Entry {
 	log := logrus.New()
 	log.SetLevel(level)
-	log.SetFormatter(new(fluentBitLogFormat))
+	log.SetFormatter(new(FLBLogFormat))
 	return log.WithFields(logrus.Fields{"interface": name})
 }

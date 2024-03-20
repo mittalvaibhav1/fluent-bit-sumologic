@@ -2,8 +2,8 @@ package sumologic
 
 import (
 	"fmt"
-	"out_sumologic/pkg/fluentbit"
 	"out_sumologic/pkg/fluentbit/logger"
+	"out_sumologic/pkg/fluentbit/utils"
 	"time"
 	"unsafe"
 
@@ -44,9 +44,9 @@ func (s *SumoLogic) CreateBatch(data unsafe.Pointer, length int, tag string) (*B
 			break
 		}
 		// Parse timestamp
-		timestamp := fluentbit.GetTimeStamp(ts)
+		timestamp := utils.GetTimeStamp(ts)
 		// Convert record to JSON
-		jsonRecord, err := fluentbit.CreateJSON(record, s.config.logKey)
+		jsonRecord, err := utils.CreateJSON(record, s.config.logKey)
 		if err != nil {
 			s.log.Warnf("failed to parse the record %v", err)
 			return nil, err
@@ -131,7 +131,7 @@ func Initalize(plugin unsafe.Pointer, id int) (*SumoLogic, error) {
 	}
 
 	s.log = logger.New(
-		fluentbit.GetOutputInstanceName(PLUGIN_NAME, id),
+		utils.GetOutputInstanceName(PLUGIN_NAME, id),
 		s.config.level,
 	)
 
