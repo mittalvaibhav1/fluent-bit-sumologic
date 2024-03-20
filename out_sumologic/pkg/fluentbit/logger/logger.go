@@ -1,4 +1,4 @@
-package fluentbit
+package logger
 
 import (
 	"bytes"
@@ -7,9 +7,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type FluentBitLogFormat struct{}
+type FLBLogFormat struct{}
 
-func (f *FluentBitLogFormat) Format(entry *logrus.Entry) ([]byte, error) {
+func (f *FLBLogFormat) Format(entry *logrus.Entry) ([]byte, error) {
 	var b *bytes.Buffer
 	if entry.Buffer != nil {
 		b = entry.Buffer
@@ -35,9 +35,9 @@ func (f *FluentBitLogFormat) Format(entry *logrus.Entry) ([]byte, error) {
 	return b.Bytes(), nil
 }
 
-func GetLogger(name string, level logrus.Level) *logrus.Entry {
-	logger := logrus.New()
-	logger.SetLevel(level)
-	logger.SetFormatter(new(FluentBitLogFormat))
-	return logger.WithFields(logrus.Fields{"interface": name})
+func New(name string, level logrus.Level) *logrus.Entry {
+	log := logrus.New()
+	log.SetLevel(level)
+	log.SetFormatter(new(FLBLogFormat))
+	return log.WithFields(logrus.Fields{"interface": name})
 }

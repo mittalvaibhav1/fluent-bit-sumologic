@@ -2,7 +2,7 @@ package main
 
 import (
 	"C"
-	"out_sumologic/pkg/fluentbit"
+	"out_sumologic/pkg/fluentbit/logger"
 	"out_sumologic/pkg/sumologic"
 	"unsafe"
 
@@ -12,7 +12,7 @@ import (
 
 var (
 	instances []*sumologic.SumoLogic
-	logger    *logrus.Entry
+	log       *logrus.Entry
 )
 
 //export FLBPluginRegister
@@ -29,7 +29,7 @@ func FLBPluginInit(plugin unsafe.Pointer) int {
 	// Initalize a sumologic instance
 	instance, err := sumologic.Initalize(plugin, id)
 	if err != nil {
-		logger.Fatal("unable to initalise the plugin", err)
+		log.Fatal("unable to initalise the plugin", err)
 		return output.FLB_ERROR
 	}
 
@@ -40,7 +40,7 @@ func FLBPluginInit(plugin unsafe.Pointer) int {
 
 //export FLBPluginFlush
 func FLBPluginFlush(data unsafe.Pointer, length C.int, tag *C.char) int {
-	logger.Warn("flush called for unknown instance")
+	log.Warn("flush called for unknown instance")
 	return output.FLB_OK
 }
 
@@ -66,7 +66,7 @@ func FLBPluginFlushCtx(ctx, data unsafe.Pointer, length C.int, tag *C.char) int 
 
 //export FLBPluginExit
 func FLBPluginExit() int {
-	logger.Warn("exit called for unknown instance")
+	log.Warn("exit called for unknown instance")
 	return output.FLB_OK
 }
 
@@ -84,7 +84,7 @@ func FLBPluginUnregister(def unsafe.Pointer) {
 
 func init() {
 	// FIXME(mittalvaibhav1, 09-03-2024): should be replaced with the service log level once that is supported for Go plugins.
-	logger = fluentbit.GetLogger(sumologic.PLUGIN_NAME, logrus.DebugLevel)
+	log = logger.New(sumologic.PLUGIN_NAME, logrus.DebugLevel)
 }
 
 func main() {}

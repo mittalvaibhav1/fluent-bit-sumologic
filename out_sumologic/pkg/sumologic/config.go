@@ -41,9 +41,7 @@ func loadConfig(plugin unsafe.Pointer) (*sumoLogicConfig, error) {
 	var err error
 	// Initalize and load config
 	config := new(sumoLogicConfig)
-	c := fluentbit.FLBPluginConfig{
-		Plugin: plugin,
-	}
+	c := fluentbit.New(plugin)
 
 	config.collectorURL = c.Get("Collector_Url")
 	if config.collectorURL == "" {

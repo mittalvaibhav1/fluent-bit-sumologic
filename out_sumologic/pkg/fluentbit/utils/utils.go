@@ -1,8 +1,12 @@
-package fluentbit
+package utils
 
 import (
 	"encoding/json"
+	"fmt"
 	"strconv"
+	"time"
+
+	"github.com/fluent/fluent-bit-go/output"
 )
 
 func encodeJSON(record map[interface{}]interface{}) map[string]interface{} {
@@ -55,4 +59,20 @@ func CreateJSON(record map[interface{}]interface{}, logKey string) (string, erro
 		return string("{}"), err
 	}
 	return strconv.Unquote(string(res))
+}
+
+func GetOutputInstanceName(name string, id int) string {
+	// Similar pattern is followed by all fluent-bit plugins
+	return fmt.Sprintf("output:%s:%s.%d", name, name, id)
+}
+
+func GetTimeStamp(ts interface{}) time.Time {
+	switch t := ts.(type) {
+	case output.FLBTime:
+		return ts.(output.FLBTime).Time
+	case uint64:
+		return time.Unix(int64(t), 0)
+	default:
+		return time.Now()
+	}
 }
