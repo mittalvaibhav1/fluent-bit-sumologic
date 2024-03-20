@@ -3,6 +3,7 @@ package sumologic
 import (
 	"fmt"
 	"out_sumologic/pkg/fluentbit"
+	"out_sumologic/pkg/fluentbit/logger"
 	"time"
 	"unsafe"
 
@@ -27,7 +28,7 @@ type Batch struct {
 
 type SumoLogic struct {
 	config   *sumoLogicConfig
-	logger   *logrus.Entry
+	log      *logrus.Entry
 	uploader *uploader
 }
 
@@ -47,7 +48,7 @@ func (s *SumoLogic) CreateBatch(data unsafe.Pointer, length int, tag string) (*B
 		// Convert record to JSON
 		jsonRecord, err := fluentbit.CreateJSON(record, s.config.logKey)
 		if err != nil {
-			s.logger.Warnf("failed to parse the record %v", err)
+			s.log.Warnf("failed to parse the record %v", err)
 			return nil, err
 		}
 		batch.entries = append(batch.entries, &Entry{
@@ -58,7 +59,7 @@ func (s *SumoLogic) CreateBatch(data unsafe.Pointer, length int, tag string) (*B
 
 	batch.config, err = parseConfig(s.config, tag)
 	if err != nil {
-		s.logger.Warnf("failed to parse the config %v", err)
+		s.log.Warnf("failed to parse the config %v", err)
 		return nil, err
 	}
 
@@ -69,10 +70,10 @@ func (s *SumoLogic) SendBatch(batch *Batch) error {
 	// queue batch for upload
 	select {
 	case s.uploader.batches <- batch:
-		s.logger.Trace("batch queued successfully")
+		s.log.Trace("batch queued successfully")
 		return nil
 	default:
-		s.logger.Warnf("failed to queue the batch")
+		s.log.Warnf("failed to queue the batch")
 		return fmt.Errorf("channel closed, unable to queue the batch")
 	}
 }
@@ -81,7 +82,7 @@ func (s *SumoLogic) Start() {
 	defer s.uploader.wg.Done()
 	for batch := range s.uploader.batches {
 		// upload batch to sumologic
-		s.logger.Debugf("attempting upload to sumologic with config: %v", batch.config)
+		s.log.Debugf("attempting upload to sumologic with config: %v", batch.config)
 		s.uploader.wg.Add(1)
 		go s.retryAndUpload(batch)
 	}
@@ -96,16 +97,16 @@ func (s *SumoLogic) retryAndUpload(batch *Batch) {
 		},
 	)
 	if err != nil {
-		s.logger.Errorf("failed to upload batch to sumologic %v, retries exhausted!", err)
+		s.log.Errorf("failed to upload batch to sumologic %v, retries exhausted!", err)
 	} else {
-		s.logger.Debug("successfully uploaded batch to sumologic")
+		s.log.Debug("successfully uploaded batch to sumologic")
 	}
 }
 
 func (s *SumoLogic) retryer(attempts uint64, f func() error) error {
 	err := f()
 	if err != nil && attempts > 0 {
-		s.logger.Debugf("failed with err: %v, %d retries left", err, attempts)
+		s.log.Debugf("failed with err: %v, %d retries left", err, attempts)
 		time.Sleep(5 * time.Second)
 		return s.retryer(attempts-1, f)
 	} else {
@@ -114,10 +115,10 @@ func (s *SumoLogic) retryer(attempts uint64, f func() error) error {
 }
 
 func (s *SumoLogic) Stop() {
-	s.logger.Info("exiting gracefully...")
+	s.log.Info("exiting gracefully...")
 	close(s.uploader.batches)
 	s.uploader.wg.Wait()
-	s.logger.Info("exited")
+	s.log.Info("exited")
 }
 
 func Initalize(plugin unsafe.Pointer, id int) (*SumoLogic, error) {
@@ -129,13 +130,13 @@ func Initalize(plugin unsafe.Pointer, id int) (*SumoLogic, error) {
 		return nil, fmt.Errorf("unable to load the plugin config\n %w", err)
 	}
 
-	s.logger = fluentbit.GetLogger(
+	s.log = logger.New(
 		fluentbit.GetOutputInstanceName(PLUGIN_NAME, id),
 		s.config.level,
 	)
 
-	s.logger.Info("initializing...")
-	s.logger.Debug(s.config)
+	s.log.Info("initializing...")
+	s.log.Debug(s.config)
 
 	s.uploader = &uploader{
 		batches: make(chan *Batch, 1000),
